@@ -15,12 +15,70 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"syscall"
+
+	"github.com/OpenNHP/opennhp/endpoints/agent"
 	_ "github.com/fatedier/frp/assets/frpc"
 	"github.com/fatedier/frp/cmd/frpc/sub"
 	"github.com/fatedier/frp/pkg/util/system"
 )
 
+const (
+	colorReset  = "\033[0m"
+	colorCyan   = "\033[36m"
+	colorGreen  = "\033[32m"
+	colorYellow = "\033[33m"
+	colorBlue   = "\033[34m"
+	colorPurple = "\033[35m"
+	colorBold   = "\033[1m"
+	colorDim    = "\033[2m"
+)
+
+func nhpAgentStart(waitCh chan error) {
+	exeFilePath, err := os.Executable()
+	if err != nil {
+		waitCh <- err
+		return
+	}
+	exeDirPath := filepath.Dir(exeFilePath)
+
+	a := &agent.UdpAgent{}
+
+	err = a.Start(exeDirPath, 4)
+	if err != nil {
+		fmt.Printf("\n  %s❌ Failed to start agent:%s %v\n\n", colorYellow, colorReset, err)
+		waitCh <- err
+		return
+	}
+
+	a.StartKnockLoop()
+	// react to terminate signals
+	termCh := make(chan os.Signal, 1)
+	signal.Notify(termCh, syscall.SIGTERM, os.Interrupt, syscall.SIGABRT)
+
+	// block until terminated
+	<-termCh
+
+	fmt.Printf("\n  %s🛑 Shutting down agent...%s\n", colorYellow, colorReset)
+	a.Stop()
+	fmt.Printf("  %s✅ Agent stopped gracefully%s\n\n", colorGreen, colorReset)
+}
+
 func main() {
+	waitCh := make(chan error)
+	go nhpAgentStart(waitCh)
+	err := <-waitCh
+	if err != nil {
+		fmt.Printf("nhp agent start error: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("nhp agent started successfully\n")
+
 	system.EnableCompatibilityMode()
 	sub.Execute()
 }
