@@ -1,6 +1,9 @@
 export PATH := $(PATH):`go env GOPATH`/bin
 export GO111MODULE=on
 LDFLAGS := -s -w
+OS_NAME = $(shell uname -s | tr A-Z a-z)
+# OpenNHP submodule directory
+OPENNHP_DIR = third_party/opennhp
 
 all: env fmt build
 
@@ -31,7 +34,43 @@ vet:
 frps:
 	env CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -tags frps -o bin/frps ./cmd/frps
 
-frpc:
+# Build OpenNHP SDK from submodule
+build-sdk:
+	@echo "[StealthDNS] Building OpenNHP SDK from submodule..."
+ifeq ($(OS_NAME), linux)
+	@$(MAKE) build-sdk-linux
+else ifeq ($(OS_NAME), darwin)
+	@$(MAKE) build-sdk-macos
+else
+	@echo "[StealthDNS] Skipping SDK build on ${OS_NAME}, use build.bat for Windows"
+endif
+
+build-sdk-linux:
+	@echo "[StealthDNS] Building Linux SDK (nhp-agent.so)..."
+	@cd $(OPENNHP_DIR)/nhp && go mod tidy
+	@cd $(OPENNHP_DIR)/endpoints && go mod tidy
+	@cd $(OPENNHP_DIR)/endpoints && \
+		go build -a -trimpath -buildmode=c-shared -ldflags="-w -s" -v \
+		-o ../../../sdk/nhp-agent.so ./agent/main/main.go ./agent/main/export.go
+	@echo "[StealthDNS] Linux SDK built successfully!"
+	@cd $(OPENNHP_DIR)/nhp && git restore go.mod go.sum 2>/dev/null || git checkout go.mod go.sum 2>/dev/null || true
+	@cd $(OPENNHP_DIR)/endpoints && git restore go.mod go.sum 2>/dev/null || git checkout go.mod go.sum 2>/dev/null || true
+	@cd $(OPENNHP_DIR) && git reset --hard HEAD 2>/dev/null || true
+
+build-sdk-macos:
+	@echo "[StealthDNS] Building macOS SDK (nhp-agent.dylib)..."
+	@cd $(OPENNHP_DIR)/nhp && go mod tidy
+	@cd $(OPENNHP_DIR)/endpoints && go mod tidy
+	@cd $(OPENNHP_DIR)/endpoints && \
+		GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 \
+		go build -a -trimpath -buildmode=c-shared -ldflags="-w -s" -v \
+		-o ../../../sdk/nhp-agent.dylib ./agent/main/main.go ./agent/main/export.go
+	@echo "[StealthDNS] macOS SDK built successfully!"
+	@cd $(OPENNHP_DIR)/nhp && git restore go.mod go.sum 2>/dev/null || git checkout go.mod go.sum 2>/dev/null || true
+	@cd $(OPENNHP_DIR)/endpoints && git restore go.mod go.sum 2>/dev/null || git checkout go.mod go.sum 2>/dev/null || true
+	@cd $(OPENNHP_DIR) && git reset --hard HEAD 2>/dev/null || true
+
+frpc: build-sdk-linux
 	env CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -tags frpc -o bin/frpc ./cmd/frpc
 
 test: gotest

@@ -1,13 +1,11 @@
-FROM golang:1.25 AS building
+FROM opennhp-base:latest AS building
 
 COPY . /building
 WORKDIR /building
 
 RUN make frpc
 
-FROM alpine:3
-
-RUN apk add --no-cache tzdata
+FROM ubuntu:22.04  AS runtime
 
 COPY --from=building /building/bin/frpc /nhp-agent/frpc
 
