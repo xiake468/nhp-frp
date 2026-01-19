@@ -36,42 +36,52 @@ frps:
 
 # Build OpenNHP SDK from submodule
 build-sdk:
-	@echo "[StealthDNS] Building OpenNHP SDK from submodule..."
+	@echo "[Nhp-frp] Building OpenNHP SDK from submodule..."
 ifeq ($(OS_NAME), linux)
 	@$(MAKE) build-sdk-linux
 else ifeq ($(OS_NAME), darwin)
 	@$(MAKE) build-sdk-macos
 else
-	@echo "[StealthDNS] Skipping SDK build on ${OS_NAME}, use build.bat for Windows"
+	@echo "[Nhp-frp] Skipping SDK build on ${OS_NAME}, use build.bat for Windows"
 endif
 
 build-sdk-linux:
-	@echo "[StealthDNS] Building Linux SDK (nhp-agent.so)..."
+	@echo "[Nhp-frp] Building Linux SDK (nhp-agent.so)..."
 	@cd $(OPENNHP_DIR)/nhp && go mod tidy
 	@cd $(OPENNHP_DIR)/endpoints && go mod tidy
 	@cd $(OPENNHP_DIR)/endpoints && \
 		go build -a -trimpath -buildmode=c-shared -ldflags="-w -s" -v \
 		-o ../../../sdk/nhp-agent.so ./agent/main/main.go ./agent/main/export.go
-	@echo "[StealthDNS] Linux SDK built successfully!"
+	@echo "[Nhp-frp] Linux SDK built successfully!"
 	@cd $(OPENNHP_DIR)/nhp && git restore go.mod go.sum 2>/dev/null || git checkout go.mod go.sum 2>/dev/null || true
 	@cd $(OPENNHP_DIR)/endpoints && git restore go.mod go.sum 2>/dev/null || git checkout go.mod go.sum 2>/dev/null || true
 	@cd $(OPENNHP_DIR) && git reset --hard HEAD 2>/dev/null || true
 
 build-sdk-macos:
-	@echo "[StealthDNS] Building macOS SDK (nhp-agent.dylib)..."
+	@echo "[Nhp-frp] Building macOS SDK (nhp-agent.dylib)..."
 	@cd $(OPENNHP_DIR)/nhp && go mod tidy
 	@cd $(OPENNHP_DIR)/endpoints && go mod tidy
 	@cd $(OPENNHP_DIR)/endpoints && \
 		GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 \
 		go build -a -trimpath -buildmode=c-shared -ldflags="-w -s" -v \
 		-o ../../../sdk/nhp-agent.dylib ./agent/main/main.go ./agent/main/export.go
-	@echo "[StealthDNS] macOS SDK built successfully!"
+	@echo "[Nhp-frp] macOS SDK built successfully!"
 	@cd $(OPENNHP_DIR)/nhp && git restore go.mod go.sum 2>/dev/null || git checkout go.mod go.sum 2>/dev/null || true
 	@cd $(OPENNHP_DIR)/endpoints && git restore go.mod go.sum 2>/dev/null || git checkout go.mod go.sum 2>/dev/null || true
 	@cd $(OPENNHP_DIR) && git reset --hard HEAD 2>/dev/null || true
 
-frpc: build-sdk-linux
-	env CGO_ENABLED=0 go build -trimpath -ldflags "$(LDFLAGS)" -tags frpc -o bin/frpc ./cmd/frpc
+# Clean SDK binaries
+clean-sdk:
+	@echo "[Nhp-frp] Cleaning SDK binaries..."
+	rm -f sdk/nhp-agent.so sdk/nhp-agent.dylib sdk/nhp-agent.dll sdk/nhp-agent.h
+
+frpc: build-sdk
+	@mkdir -p ./bin/sdk
+	cp ./sdk/nhp-agent.* ./bin/sdk/ 2>/dev/null 
+	go build -trimpath -ldflags "$(LDFLAGS)" -tags frpc -o bin/frpc ./cmd/frpc
+ifeq ($(OS_NAME), darwin)
+	install_name_tool -change nhp-agent.dylib ./bin/sdk/nhp-agent.dylib ./bin/frpc
+endif
 
 test: gotest
 

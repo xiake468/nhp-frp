@@ -7,6 +7,6 @@ RUN make frpc
 
 FROM ubuntu:22.04  AS runtime
 
-COPY --from=building /building/bin/frpc /nhp-agent/frpc
+COPY --from=building /building/bin/ /nhp-agent/
 
 ENTRYPOINT ["/nhp-agent/frpc"]
