@@ -55,9 +55,6 @@ services:
     container_name: nhp-frpc
     restart: always
     #command: []
-    ports:
-      - "443:443"
-      - "80:80"
     networks:
       network_default:
         ipv4_address: 177.7.0.11
@@ -80,9 +77,9 @@ services:
     container_name: nhp-agent
     restart: always
     #command: []
-    ports:
-      - "443:443"
-      - "80:80"
+    #ports:
+    #  - "443:443"
+    #  - "80:80"
     networks:
       network_default:
         ipv4_address: 177.7.0.8
@@ -110,7 +107,6 @@ services:
         ipv4_address: 177.7.0.12
 
   web-app2:
-    image: web-app
     container_name: web-app2
     build: 
       context: .
