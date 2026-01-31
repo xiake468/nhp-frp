@@ -61,6 +61,7 @@ func nhpAgentStart(waitCh chan error) {
 	signal.Notify(termCh, syscall.SIGTERM, os.Interrupt, syscall.SIGABRT)
 
 	// block until terminated
+	waitCh <- nil
 	<-termCh
 
 	fmt.Printf("\n  %s🛑 Shutting down agent...%s\n", colorYellow, colorReset)

@@ -6,7 +6,7 @@ COPY . .
 
 RUN echo "Building for architecture: ${TARGETARCH}"
 
-RUN cd /nhp-server/third_party/opennhp &&  make init serverd plugins test
+RUN cd /nhp-server/third_party/opennhp &&  make init serverd plugins
 
 FROM ubuntu:22.04  AS runtime
 

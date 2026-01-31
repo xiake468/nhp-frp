@@ -26,7 +26,7 @@ CookieDomain = "opennhp.org"
 ACId = "testAC-1"
 Hostname = "localhost"
 Addr.Ip = "177.7.0.10"
-Addr.Port = 80 # empty or 0 for all ports
+Addr.Port = 0 # empty or 0 for all ports
 Addr.Protocol = "" # "tcp/udp/any", empty for "any"
 PortSuffix = false
 

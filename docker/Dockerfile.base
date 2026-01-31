@@ -4,7 +4,7 @@ FROM --platform=$BUILDPLATFORM ubuntu:22.04 AS builder
 ARG TARGETARCH
 ARG TARGETOS
 ARG GOPROXY=https://goproxy.cn,direct
-ARG GO_VERSION=1.21.2
+ARG GO_VERSION=1.25.6
 
 # Set Proxy
 ENV GOPROXY=${GOPROXY}
@@ -52,6 +52,8 @@ ENV PATH="${GOPATH}/bin:${PATH}"
 ENV GOOS=${TARGETOS}
 ENV GOARCH=${TARGETARCH}
 ENV CGO_ENABLED=1
+
+ENV GOTOOLCHAIN=go1.25.6
 
 # Verify installations
 RUN go version && \
