@@ -10,13 +10,13 @@ volumes:
 
 services:
   nhp-server:
-    image: opennhp-server
+    image: nhpfrp-opennhpserver
     build:
       context: ..
       dockerfile: ./docker/Dockerfile.server
       args:
         - GOPROXY=${GOPROXY:-}
-    container_name: nhp-server
+    container_name: nhpfrp-nhpserver
     restart: always
     networks:
       network_default:
@@ -28,7 +28,7 @@ services:
       - ./nhp-server/plugins/example/etc/:/nhp-server/plugins/example/etc/:rw
 
   nhp-ac:
-    image: opennhp-ac
+    image: nhpfrp-opennhpac-nhpfrps
     container_name: nhp-ac
     build: 
       context: ..
@@ -48,11 +48,11 @@ services:
         ipv4_address: 177.7.0.10
 
   nhp-frpc:
-    image: opennhp-frpc:latest
+    image: nhpfrp-nhpfrpc
     build: 
       context: ..
       dockerfile: ./docker/Dockerfile.frpc
-    container_name: nhp-frpc
+    container_name: nhpfrp-nhpfrpc
     restart: always
     #command: []
     networks:
@@ -70,11 +70,11 @@ services:
       - ./nhp-frpc/frpc.toml:/nhp-agent/frpc.toml:rw
 
   nhp-agent:
-    image: opennhp-agent:latest
+    image: nhpfrp-client
     build: 
       context: ..
       dockerfile: ./docker/Dockerfile.agent
-    container_name: nhp-agent
+    container_name: nhpfrp-client
     restart: always
     #command: []
     #ports:
